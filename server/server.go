@@ -1,21 +1,23 @@
 package main
 
 import (
-	"fmt"
-	"net"
 	"errors"
-	pb "github.com/weackd/grpc-pubsub-broker/protobuf"
-	"sync"
+	"fmt"
 	"math/rand"
+	"net"
+	"sync"
+
 	"golang.org/x/net/context"
-	"google.golang.org/grpc/grpclog"	
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/grpclog"
+
+	pb "github.com/davidmmcdonnel/grpc-pubsub-broker/protobuf"
 )
 
 type ClientData struct {
-	identity *pb.Identity
-	channel chan *pb.Message
-	mutex   sync.Mutex
+	identity  *pb.Identity
+	channel   chan *pb.Message
+	mutex     sync.Mutex
 	connected bool
 }
 
@@ -25,7 +27,7 @@ type ClientRegistry struct {
 }
 
 func (this *ServerContext) Stop() {
-	for _, client := range this.clients {		
+	for _, client := range this.clients {
 		client.mutex.Lock()
 		close(client.channel)
 		client.connected = false
@@ -35,7 +37,7 @@ func (this *ServerContext) Stop() {
 
 var letterRunes = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789")
 
-func generateRandomString(size int)(string) {
+func generateRandomString(size int) string {
 	b := make([]rune, size)
 	for i := range b {
 		b[i] = letterRunes[rand.Intn(len(letterRunes))]
@@ -43,13 +45,13 @@ func generateRandomString(size int)(string) {
 	return string(b)
 }
 
-func (this *ClientRegistry) getClient(identity *pb.Identity) (*ClientData, error){
+func (this *ClientRegistry) getClient(identity *pb.Identity) (*ClientData, error) {
 	this.mutex.Lock()
 	for _, client := range this.clients {
-		if (client.identity.Name == identity.Name) {
+		if client.identity.Name == identity.Name {
 			this.mutex.Unlock()
 			return client, nil
-		}		
+		}
 	}
 	this.mutex.Unlock()
 	return nil, errors.New("Client was not registered")
@@ -65,13 +67,13 @@ func (this *ClientRegistry) Register(identity *pb.Identity) {
 	this.mutex.Unlock()
 }
 
-func (this *ClientRegistry) isRegistered(identity *pb.Identity)(bool) {
+func (this *ClientRegistry) isRegistered(identity *pb.Identity) bool {
 	this.mutex.Lock()
 	for _, client := range this.clients {
-		if (client.identity.Name == identity.Name) {
+		if client.identity.Name == identity.Name {
 			this.mutex.Unlock()
 			return true
-		}		
+		}
 	}
 	this.mutex.Unlock()
 	return false
@@ -80,7 +82,7 @@ func (this *ClientRegistry) isRegistered(identity *pb.Identity)(bool) {
 func (this *ClientRegistry) Unregister(identity *pb.Identity) error {
 	this.mutex.Lock()
 	for index, client := range this.clients {
-		if (client.identity.Name == identity.Name) {
+		if client.identity.Name == identity.Name {
 			this.clients = append(this.clients[:index], this.clients[index+1:]...)
 			this.mutex.Unlock()
 			return nil
@@ -92,7 +94,7 @@ func (this *ClientRegistry) Unregister(identity *pb.Identity) error {
 
 type SubscriptionRegistry struct {
 	topics map[string]*MessageTopic
-	mutex   sync.Mutex
+	mutex  sync.Mutex
 }
 
 func (this *SubscriptionRegistry) getTopic(key string) (topic *MessageTopic) {
@@ -109,14 +111,14 @@ func (this *SubscriptionRegistry) getTopic(key string) (topic *MessageTopic) {
 
 type MessageTopic struct {
 	subscriptions []*ClientData
-	mutex   sync.Mutex
+	mutex         sync.Mutex
 }
 
 func (this *MessageTopic) Spread(message *pb.Message) {
 	this.mutex.Lock()
 	for _, client := range this.subscriptions {
 		client.mutex.Lock()
-		if (client.connected == true) {
+		if client.connected == true {
 			client.channel <- message
 		}
 		client.mutex.Unlock()
@@ -183,7 +185,7 @@ func (this *ServerContext) Subscribe(ctx context.Context, request *pb.SubscribeR
 	grpclog.Printf("Subscribing %s to %s", request.Identity.Name, request.Subscription.Key)
 
 	topic := this.getTopic(request.Subscription.Key)
-	if (topic.isSubscribed(client) == true) {
+	if topic.isSubscribed(client) == true {
 		grpclog.Printf("Error already subscribed %s", request.Identity.Name)
 		return nil, errors.New("Client already subscribed to this key")
 	}
@@ -198,7 +200,7 @@ func (this *ServerContext) Unsubscribe(ctx context.Context, request *pb.Subscrib
 	}
 
 	topic := this.getTopic(request.Subscription.Key)
-	if (topic.isSubscribed(client) == false) {
+	if topic.isSubscribed(client) == false {
 		grpclog.Printf("Error not subscribed %s", request.Identity.Name)
 		return nil, errors.New("Client was not subscribed to this key")
 	}
@@ -217,12 +219,12 @@ func (this *ServerContext) Pull(identity *pb.Identity, stream pb.Subscriber_Pull
 	client.mutex.Lock()
 	client.connected = true
 	client.mutex.Unlock()
-	
+
 	for msg := range client.channel {
 		if err := stream.Send(msg); err != nil {
 			return err
 		}
-		
+
 	}
 
 	client.mutex.Lock()
@@ -231,7 +233,6 @@ func (this *ServerContext) Pull(identity *pb.Identity, stream pb.Subscriber_Pull
 
 	grpclog.Printf("Closing stream for %s", identity.Name)
 
-	
 	return nil
 }
 
@@ -244,8 +245,8 @@ func (this *ServerContext) Publish(ctx context.Context, request *pb.PublishReque
 }
 
 type PubSubServer struct {
-	context	*ServerContext
-	server	*grpc.Server
+	context *ServerContext
+	server  *grpc.Server
 }
 
 func (this *PubSubServer) Stop() {
@@ -256,7 +257,7 @@ func (this *PubSubServer) Stop() {
 func (this *PubSubServer) Start(port string) {
 	var opts []grpc.ServerOption
 
-	lis, err := net.Listen("tcp", ":" + port)
+	lis, err := net.Listen("tcp", ":"+port)
 	if err != nil {
 		fmt.Print(err.Error())
 		return

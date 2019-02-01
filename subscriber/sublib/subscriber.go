@@ -4,8 +4,10 @@ import (
 	"context"
 	"io"
 	"sync"
-	pb "github.com/weackd/grpc-pubsub-broker/protobuf"
+
 	"google.golang.org/grpc/grpclog"
+
+	pb "github.com/davidmmcdonnel/grpc-pubsub-broker/protobuf"
 )
 
 type SubscriberContext struct {
@@ -70,4 +72,3 @@ func NewSubscriberContext() *SubscriberContext {
 	s.Speed = 0
 	return s
 }
-

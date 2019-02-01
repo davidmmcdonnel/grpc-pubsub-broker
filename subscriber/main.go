@@ -1,13 +1,15 @@
 package main
 
 import (
-	"time"
 	"flag"
 	"fmt"
-	pb "github.com/weackd/grpc-pubsub-broker/protobuf"
-	sublib "github.com/weackd/grpc-pubsub-broker/subscriber/sublib"
+	"time"
+
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/grpclog"
+
+	pb "github.com/davidmmcdonnel/grpc-pubsub-broker/protobuf"
+	sublib "github.com/davidmmcdonnel/grpc-pubsub-broker/subscriber/sublib"
 )
 
 var (

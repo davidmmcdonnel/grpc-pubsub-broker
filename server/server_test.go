@@ -2,29 +2,30 @@ package main
 
 import (
 	"context"
-	"testing"
-	"io"
-	"time"
 	"fmt"
+	"io"
 	"sync"
-	pb "github.com/weackd/grpc-pubsub-broker/protobuf"
+	"testing"
+	"time"
+
 	"google.golang.org/grpc"
+
+	pb "github.com/davidmmcdonnel/grpc-pubsub-broker/protobuf"
 )
 
-var sent	int = 0
-var received	int = 0
-var rmutex	sync.Mutex
-var smutex	sync.Mutex
-
+var sent int = 0
+var received int = 0
+var rmutex sync.Mutex
+var smutex sync.Mutex
 
 type Subscriber struct {
-	client		pb.SubscriberClient
-	identity	*pb.Identity
-	conn		*grpc.ClientConn
+	client   pb.SubscriberClient
+	identity *pb.Identity
+	conn     *grpc.ClientConn
 }
 
 func (this *Subscriber) Pull() error {
-	stream, err := this.client.Pull(context.Background(), this.identity)	
+	stream, err := this.client.Pull(context.Background(), this.identity)
 	if err != nil {
 		return err
 	}
@@ -63,8 +64,8 @@ func (this *Subscriber) Subscribe(key string) error {
 }
 
 type Publisher struct {
-	client		pb.PublisherClient
-	conn		*grpc.ClientConn
+	client pb.PublisherClient
+	conn   *grpc.ClientConn
 }
 
 func (this *Publisher) Publish(key string, msg string) error {
@@ -78,10 +79,10 @@ func (this *Publisher) Publish(key string, msg string) error {
 }
 
 type TestContext struct {
-	subscribers	[]Subscriber
-	publishers	[]Publisher
-	serverPort	string
-	server		*PubSubServer
+	subscribers []Subscriber
+	publishers  []Publisher
+	serverPort  string
+	server      *PubSubServer
 }
 
 func (this *TestContext) Stop() {
@@ -101,13 +102,13 @@ func (this *TestContext) Stop() {
 	time.Sleep(1 * time.Second)
 	this.server.Stop()
 
-//	this.server.GracefulStop()
+	//	this.server.GracefulStop()
 }
 
 func (this *TestContext) StartServer(port string) error {
 	this.serverPort = port
 
-	this.server = newPubSubServer()	
+	this.server = newPubSubServer()
 	go this.server.Start(port)
 	return nil
 }
@@ -117,14 +118,14 @@ func (this *TestContext) AddPub(keys []string, messages []string) error {
 	var pub Publisher
 
 	opts = append(opts, grpc.WithInsecure())
-	
+
 	conn, err := grpc.Dial(":"+this.serverPort, opts...)
 	if err != nil {
 		return err
 	}
 	pub.client = pb.NewPublisherClient(conn)
 	pub.conn = conn
- 	this.publishers = append(this.publishers, pub)
+	this.publishers = append(this.publishers, pub)
 	return nil
 }
 
@@ -133,8 +134,8 @@ func (this *TestContext) AddSub(keys []string) error {
 	var sub Subscriber
 
 	opts = append(opts, grpc.WithInsecure())
-	
-	conn, err := grpc.Dial(":" + this.serverPort, opts...)
+
+	conn, err := grpc.Dial(":"+this.serverPort, opts...)
 	if err != nil {
 		return err
 	}
@@ -171,13 +172,13 @@ func (this *TestContext) StressTest(b *testing.B, msgLimit int, subNb int, pubNb
 
 	x := 0
 	y := 0
-	
+
 	for {
 		rmutex.Lock()
 		receivedMessages := received
 		rmutex.Unlock()
 
-		if receivedMessages >= msgLimit * subNb {
+		if receivedMessages >= msgLimit*subNb {
 			break
 		}
 
@@ -192,7 +193,7 @@ func (this *TestContext) StressTest(b *testing.B, msgLimit int, subNb int, pubNb
 		}
 	}
 	b.StopTimer()
-	
+
 	b.Logf("Received %d messages with %d subscribers", received, subNb)
 }
 
@@ -208,18 +209,17 @@ func BenchmarkServer1p1s(b *testing.B) {
 	topics := []string{
 		"test",
 		"test2"}
-	
-	messages := []string {
+
+	messages := []string{
 		"qwertyuiop",
 		"Message",
 		"6746468463846843684354"}
 
 	test.StressTest(b, 5000, 1, 1, topics, messages)
 	fmt.Printf("DONE !\n")
-	
+
 	test.Stop()
 }
-
 
 func BenchmarkServer1p10s(b *testing.B) {
 	sent = 0
@@ -233,8 +233,8 @@ func BenchmarkServer1p10s(b *testing.B) {
 	topics := []string{
 		"test",
 		"test2"}
-	
-	messages := []string {
+
+	messages := []string{
 		"qwertyuiop",
 		"Message",
 		"6746468463846843684354"}
@@ -256,8 +256,8 @@ func BenchmarkServer40000_10p100s(b *testing.B) {
 	topics := []string{
 		"test",
 		"test2"}
-	
-	messages := []string {
+
+	messages := []string{
 		"qwertyuiop",
 		"Message",
 		"6746468463846843684354"}
@@ -276,11 +276,11 @@ func BenchmarkServer5000_10p5s_3MB_MESSAGE(b *testing.B) {
 		b.Fatalf("Couldn't start server: %s", err.Error())
 	}
 
-	topics := []string {
+	topics := []string{
 		"test",
 		"test2"}
-	
-	messages := []string {
+
+	messages := []string{
 		generateRandomString(3000000)}
 
 	test.StressTest(b, 5000, 5, 10, topics, messages)

@@ -2,8 +2,10 @@ package publisher
 
 import (
 	"context"
-	pb "github.com/weackd/grpc-pubsub-broker/protobuf"
+
 	"google.golang.org/grpc/grpclog"
+
+	pb "github.com/davidmmcdonnel/grpc-pubsub-broker/protobuf"
 )
 
 func Publish(client pb.PublisherClient, key string, msg *pb.Message) {
@@ -15,4 +17,3 @@ func Publish(client pb.PublisherClient, key string, msg *pb.Message) {
 	}
 
 }
-
