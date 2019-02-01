@@ -40,8 +40,8 @@ func main() {
 		fileContent = data
 	}
 
-	var speed int = 0
-	var size int = 0
+	var speed int
+	var size int
 
 	go func(size *int, speed *int) {
 		for {
@@ -56,13 +56,13 @@ func main() {
 		if fileContent == nil {
 			for _, value := range flag.Args() {
 				publib.Publish(client, *topic, &pb.Message{Data: []byte(value)})
-				speed += 1
+				speed++
 				size += int(len(value))
 				time.Sleep(time.Duration(*frequency))
 			}
 		} else {
 			publib.Publish(client, *topic, &pb.Message{Data: fileContent})
-			speed += 1
+			speed++
 			size += int(len(fileContent))
 			time.Sleep(time.Duration(*frequency))
 		}
